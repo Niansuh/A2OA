@@ -13,7 +13,7 @@ MIN_ELAPSED_TIME = 0.02
 
 
 class AIProAdapter(BaseAdapter):
-    def __init__(self, password, proxy):
+    def __init__(self, password, proxy, api_proxy):
         self.password = password
         self.last_time = None
         if proxy:
@@ -23,6 +23,11 @@ class AIProAdapter(BaseAdapter):
             }
         else:
             self.proxies = None
+
+        if api_proxy:
+            self.api_base = api_proxy
+        else:
+            self.api_base = 'https://chatpro.ai-pro.org'
 
     def get_api_key(self, headers):
         auth_header = headers.get("authorization", None)
@@ -129,7 +134,7 @@ class AIProAdapter(BaseAdapter):
 
         api_key = self.get_api_key(headers)
         if api_key != self.password:
-            raise Exception(f"Error: Invalid Key")
+            raise Exception(f"Error: The key is invalid")
 
         headers = {
             'Host': 'chatpro.ai-pro.org',
@@ -141,7 +146,7 @@ class AIProAdapter(BaseAdapter):
             'Referer': 'https://chatpro.ai-pro.org/chat/new',
         }
 
-        api_url = 'https://chatpro.ai-pro.org/api/ask/' + json_data["endpoint"]
+        api_url = self.api_base + '/api/ask/' + json_data["endpoint"]
         last_text = ""
         last_incomplete_raw_text = ""
         async with httpx.AsyncClient(http2=False, timeout=120.0, verify=False, proxies=self.proxies) as client:
@@ -159,7 +164,7 @@ class AIProAdapter(BaseAdapter):
 
                 if match:
                     text = match.group(2)
-                    print(text)
+                    # print(text)
                     yield self.to_openai_response(model=model, content=text)
                 else:
                     raise Exception(f"No match found")
@@ -176,7 +181,7 @@ class AIProAdapter(BaseAdapter):
                     yield self.to_openai_response_stream_begin(model=model)
                     async for raw_data in response.aiter_text():
                         if raw_data:
-                            print('raw_data: ' + raw_data)
+                            # print('raw_data: ' + raw_data)
                             try:
                                 if last_incomplete_raw_text != "":
                                     text = self.take(last_incomplete_raw_text + raw_data)
@@ -185,13 +190,13 @@ class AIProAdapter(BaseAdapter):
                             except Exception as ex:
                                 print("incomplete!!! " + str(ex))
                                 last_incomplete_raw_text += raw_data
-                                print("last_incomplete_raw_text: " + last_incomplete_raw_text)
+                                # print("last_incomplete_raw_text: " + last_incomplete_raw_text)
                                 continue
 
                             last_incomplete_raw_text = ""
                             if text == "":
                                 continue
-                            print('take text: ' + text)
+                            # print('take text: ' + text)
 
                             new_text = text[len(last_text):]
                             last_text = text
@@ -214,7 +219,7 @@ class AIProAdapter(BaseAdapter):
             # Split data into rows
             lines = parent_line.split("\n")
 
-            # Parse line
+            # Parsing the line
             for line in lines:
                 if not line:
                     continue
@@ -224,11 +229,11 @@ class AIProAdapter(BaseAdapter):
 
             # Make sure we get the data we need
             if json_data:
-                # Convert string to JSON
+                # Convert strings to JSON
                 message_data = json.loads(json_data)
 
-                # Print results
-                print(f"message_data: {message_data}")
+                # Print the results
+                # print(f"message_data: {message_data}")
 
                 if message_data.get("message") == True:
                     return message_data["text"]
@@ -238,5 +243,5 @@ class AIProAdapter(BaseAdapter):
 
                 return ""
             else:
-                print("Incomplete data or mismatched event types.")
+                print("The data is incomplete or the event type does not match.")
                 return ""
