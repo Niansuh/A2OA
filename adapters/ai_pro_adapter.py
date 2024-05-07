@@ -134,7 +134,7 @@ class AIProAdapter(BaseAdapter):
 
         api_key = self.get_api_key(headers)
         if api_key != self.password:
-            raise Exception(f"Error: The key is invalid")
+            raise Exception(f"Error: Invalid Key")
 
         headers = {
             'Host': 'chatpro.ai-pro.org',
@@ -164,7 +164,7 @@ class AIProAdapter(BaseAdapter):
 
                 if match:
                     text = match.group(2)
-                    # print(text)
+                    print(text)
                     yield self.to_openai_response(model=model, content=text)
                 else:
                     raise Exception(f"No match found")
@@ -181,7 +181,7 @@ class AIProAdapter(BaseAdapter):
                     yield self.to_openai_response_stream_begin(model=model)
                     async for raw_data in response.aiter_text():
                         if raw_data:
-                            # print('raw_data: ' + raw_data)
+                            print('raw_data: ' + raw_data)
                             try:
                                 if last_incomplete_raw_text != "":
                                     text = self.take(last_incomplete_raw_text + raw_data)
@@ -190,13 +190,13 @@ class AIProAdapter(BaseAdapter):
                             except Exception as ex:
                                 print("incomplete!!! " + str(ex))
                                 last_incomplete_raw_text += raw_data
-                                # print("last_incomplete_raw_text: " + last_incomplete_raw_text)
+                                print("last_incomplete_raw_text: " + last_incomplete_raw_text)
                                 continue
 
                             last_incomplete_raw_text = ""
                             if text == "":
                                 continue
-                            # print('take text: ' + text)
+                            print('take text: ' + text)
 
                             new_text = text[len(last_text):]
                             last_text = text
@@ -219,7 +219,7 @@ class AIProAdapter(BaseAdapter):
             # Split data into rows
             lines = parent_line.split("\n")
 
-            # Parsing the line
+            # Parse line
             for line in lines:
                 if not line:
                     continue
@@ -229,11 +229,11 @@ class AIProAdapter(BaseAdapter):
 
             # Make sure we get the data we need
             if json_data:
-                # Convert strings to JSON
+                # Convert string to JSON
                 message_data = json.loads(json_data)
 
-                # Print the results
-                # print(f"message_data: {message_data}")
+                # Print results
+                print(f"message_data: {message_data}")
 
                 if message_data.get("message") == True:
                     return message_data["text"]
@@ -243,5 +243,5 @@ class AIProAdapter(BaseAdapter):
 
                 return ""
             else:
-                print("The data is incomplete or the event type does not match.")
+                print("Incomplete data or mismatched event types.")
                 return ""
